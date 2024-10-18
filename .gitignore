@@ -1,0 +1,46 @@
+# Node.js and npm
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Hono-specific files
+.hono/
+.hono-cli.json
+.hono-config.json
+
+# Logs
+logs/
+*.log
+
+# Temp files
+tmp/
+*.tmp
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.vscode/
+.idea/
+*.iml
+
+# Build artifacts
+build/
+dist/
+*.jar
+*.war
+
+# Environment variables
+.env
+
+# Git metadata
+.gitattributes
+.gitmodules
+
+# Miscellaneous
+*.bak
+*.swp
+*.swo
+.env
+wrangler.toml

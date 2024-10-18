@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  username  String    @unique
+  email     String    @unique
+  avtar     String?
+  password  String
+  role      Role      @default(User)
+  blogs     Blog[]
+  like      Like[]
+  comments  Comment[]
+  profile   Profile?
+  createdAt DateTime  @default(now())
+
+  @@index([username, email])
+}
+
+model Profile {
+  id     String  @id @default(uuid())
+  user   User    @relation(fields: [userId], references: [id])
+  userId String  @unique
+  Bio    String?
+}
+
+model Blog {
+  id       String    @id @default(uuid())
+  title    String
+  content  String
+  imageUrl String?
+  tag      Tag
+  author   User      @relation(fields: [authorId], references: [id])
+  authorId String
+  likes    Like[]
+  comments Comment[]
+  postedAt DateTime  @default(now())
+
+  @@index([title])
+}
+
+model Like {
+  id          String @id @default(uuid())
+  likedBy     User   @relation(fields: [likedByUser], references: [id])
+  likedByUser String
+  likedBlog   Blog   @relation(fields: [likedBlogId], references: [id])
+  likedBlogId String
+}
+
+model Comment {
+  id              String   @id @default(uuid())
+  commentedBy     User     @relation(fields: [commentedByUser], references: [id])
+  commentedByUser String
+  commentedPost   Blog     @relation(fields: [commentedPostId], references: [id])
+  commentedPostId String
+  CommentedAt     DateTime @default(now())
+}
+
+enum Tag {
+  Technology
+}
+
+enum Role {
+  Admin
+  Writer
+  User
+}

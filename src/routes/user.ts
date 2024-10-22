@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
-import{setCookie,getCookie} from 'hono/cookie'
+import{setCookie,getCookie, deleteCookie} from 'hono/cookie'
 import { jwt,decode,verify,sign} from "hono/jwt";
 
 
@@ -12,8 +12,46 @@ export const userRoute = new Hono<{
         DATABASE_URL: string,
         JWT_SECRET:string,
         
+    },
+    Variables:{
+      userId:string
     }
 }>()
+
+userRoute.use( '/logout', async (c,next)=>{
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL
+  }).$extends(withAccelerate())
+
+
+  try {
+    const accessToken = await getCookie(c,'Access-Token') || c.req?.header("authorization")?.replace("Bearer","") 
+    console.log('cookie token' ,accessToken)
+  
+    if(!accessToken) return c.text('unauthorized request',402)
+  
+   const decodedToken= await verify(accessToken, c.env.JWT_SECRET)
+   
+   if(!decodedToken) return c.text('invalid token', 402)
+  
+    const user = await prisma.user.findFirst({
+      where:{
+        id: decodedToken?.id || ''
+      }
+    })
+
+    if(!user) return c.text('unauthorized user login please')
+
+      c.set('userId',user.id)
+      console.log(c.get('userId'), 'context')
+
+      await next()
+  } catch (error) {
+    
+    console.log(error)
+    c.text('error in verifying user', 500)
+  }
+})
 
 
 
@@ -21,6 +59,8 @@ userRoute.post('/register',async (c) => {
     const prisma = new PrismaClient({
       datasourceUrl: c.env.DATABASE_URL
     }).$extends(withAccelerate())
+
+    
     
     /**
      * fetch the details
@@ -39,6 +79,7 @@ userRoute.post('/register',async (c) => {
              return c.text("all fields are required");
               }
        
+          
               
 
               const alreadyExistUser = await prisma.user.findFirst({
@@ -138,7 +179,7 @@ userRoute.post('/register',async (c) => {
        id:foundUser.id,
        username:foundUser.username,
        role:foundUser.role,
-       exp: Math.floor(Date.now()/1000)+60*5
+       exp: Math.floor(Date.now()/1000)+60*50
       }, c.env.JWT_SECRET)
      
       await setCookie(c,'Access-Token',accessToken,{
@@ -161,5 +202,24 @@ userRoute.post('/register',async (c) => {
     
     console.log(error)
     return c.text("error in loogging in user", 500)
+   }
+  })
+
+  userRoute.post('/logout', async(c)=>{
+   try {
+
+    await deleteCookie(c, 'Access-Token',{
+      secure:true,
+      httpOnly:true,
+
+    })
+
+    return c.text('user logout succesfully', 200)
+
+    
+   } catch (error) {
+    
+    console.log(error)
+    c.text('error in logging out the user',500)
    }
   })

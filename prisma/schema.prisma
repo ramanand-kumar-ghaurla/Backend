@@ -17,8 +17,8 @@ model User {
   id        String    @id @default(uuid())
   username  String    @unique
   email     String    @unique
-  avtar     String?
-  password  String
+  fullName  String    
+  password  String 
   role      Role      @default(User)
   blogs     Blog[]
   like      Like[]
@@ -34,6 +34,7 @@ model Profile {
   user   User    @relation(fields: [userId], references: [id])
   userId String  @unique
   Bio    String?
+  avtar  String?
 }
 
 model Blog {

@@ -28,7 +28,7 @@ const verifyUser =  async (c:Context,next:Next)=>{
     const accessToken = await getCookie(c,'Access-Token') || c.req?.header("authorization")?.replace("Bearer","") 
     console.log('cookie token' ,accessToken)
   
-    if(!accessToken) return c.text('unauthorized request',402)
+    if(!accessToken) return c.text('unauthorized request login please',402)
   
    const decodedToken= await verify(accessToken, c.env.JWT_SECRET)
    
@@ -40,7 +40,7 @@ const verifyUser =  async (c:Context,next:Next)=>{
       }
     })
 
-    if(!user) return c.text('unauthorized user login please')
+    if(!user) return c.text('unauthorized user register  please')
 
       c.set('userId',user.id)
       console.log(c.get('userId'), 'context')
@@ -72,9 +72,9 @@ userRoute.post('/register',async (c) => {
 
     try {
 
-         const {username,email,password} = await c.req.json()
+         const {username,email,password,fullName} = await c.req.json()
 
-         if(!username && !password && !email){
+         if(!username && !password && !email && !fullName){
              c.status(403)
              return c.text("all fields are required");
               }
@@ -101,7 +101,8 @@ userRoute.post('/register',async (c) => {
           data:{
             username:username,
             email:email,
-            password:password
+            password:password,
+            fullName:fullName
           }
          })
 
@@ -121,7 +122,7 @@ userRoute.post('/register',async (c) => {
          console.log(user)
          return c.json({
           success:true,
-          data:{username: user.username, email:user.email,id:user.id},
+          data:{username: user.username, email:user.email,id:user.id, fullName:user.fullName},
           message:'user created successfully'
          })
         
@@ -194,6 +195,7 @@ userRoute.post('/register',async (c) => {
           id:foundUser.id,
           username:foundUser.username,
           email:foundUser.email,
+          fullName:foundUser.fullName
 
         }
       },
@@ -222,4 +224,57 @@ userRoute.post('/register',async (c) => {
     console.log(error)
     c.text('error in logging out the user',500)
    }
+  })
+
+  userRoute.post('/updateAccountDetails' , verifyUser, async(c)=>{
+    const prisma = new PrismaClient({
+      datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate())
+
+    try {
+
+      const {fullName , username} = await c.req.json()
+
+      const userId = await c.get('userId')
+      
+
+      if(!(username || fullName)) return  c.text('provide at least one field to update',402)
+
+        const updatedUser = await prisma.user.update({
+         where:{
+          id:userId
+          
+         },
+         
+         data:{
+       
+        username:username || undefined,
+        fullName: fullName || undefined
+        }
+        
+         
+         }
+        )
+
+       
+
+       return c.json({
+        success:true,
+        data:{
+          id:updatedUser.id,
+          fullName:updatedUser.fullName,
+          username:updatedUser.username,
+          email:updatedUser.email
+
+        },
+        message:" user's account details updated successfully",
+        statusCode: 200
+       })
+       
+
+    } catch (error) {
+      
+      console.log(error)
+      return c.text('error in updating user account details', 500)
+    }
   })

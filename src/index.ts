@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import {userRoute} from './routes/user'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
+import { blogRoute } from './routes/blog'
 
 
 
@@ -13,6 +14,7 @@ const app = new Hono<{
 }>()
 
 app.route('/api/v1/user', userRoute)
+app.route('/api/v1/blog', blogRoute)
 
 
 app.get('/', (c) => {

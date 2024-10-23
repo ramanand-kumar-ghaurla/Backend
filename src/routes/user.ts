@@ -12,13 +12,17 @@ export const userRoute = new Hono<{
         DATABASE_URL: string,
         JWT_SECRET:string,
         
+        
     },
     Variables:{
-      userId:string
-    }
+      userId:string,
+     
+    },
+    
+    
 }>()
 
-const verifyUser =  async (c:Context,next:Next)=>{
+ export const verifyUser =  async (c:Context,next:Next)=>{
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL
   }).$extends(withAccelerate())
@@ -43,7 +47,7 @@ const verifyUser =  async (c:Context,next:Next)=>{
     if(!user) return c.text('unauthorized user register  please')
 
       c.set('userId',user.id)
-      console.log(c.get('userId'), 'context')
+     
 
       await next()
   } catch (error) {

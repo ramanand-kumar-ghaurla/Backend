@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Context, Hono, Next } from "hono";
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import{setCookie,getCookie, deleteCookie} from 'hono/cookie'
@@ -18,7 +18,7 @@ export const userRoute = new Hono<{
     }
 }>()
 
-userRoute.use( '/logout', async (c,next)=>{
+const verifyUser =  async (c:Context,next:Next)=>{
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL
   }).$extends(withAccelerate())
@@ -51,7 +51,7 @@ userRoute.use( '/logout', async (c,next)=>{
     console.log(error)
     c.text('error in verifying user', 500)
   }
-})
+}
 
 
 
@@ -205,7 +205,7 @@ userRoute.post('/register',async (c) => {
    }
   })
 
-  userRoute.post('/logout', async(c)=>{
+  userRoute.post('/logout', verifyUser,async(c)=>{
    try {
 
     await deleteCookie(c, 'Access-Token',{

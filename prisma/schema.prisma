@@ -17,8 +17,8 @@ model User {
   id        String    @id @default(uuid())
   username  String    @unique
   email     String    @unique
-  fullName  String    
-  password  String 
+  fullName  String
+  password  String
   role      Role      @default(User)
   blogs     Blog[]
   like      Like[]
@@ -42,7 +42,7 @@ model Blog {
   title    String
   content  String
   imageUrl String?
-  tag      Tag
+  tag      Tag       @default(Technology)
   author   User      @relation(fields: [authorId], references: [id])
   authorId String
   likes    Like[]

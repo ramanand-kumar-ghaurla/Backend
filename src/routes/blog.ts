@@ -2,6 +2,8 @@ import { Context, Hono, Next } from "hono";
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { verifyUser } from "./user";
+import {blogValidation,updateBlogValidation} from '@ramanand_kumar/blog-types'
+import{ValidationError} from './user'
 
  export const blogRoute = new Hono<{
     Bindings:{
@@ -21,7 +23,12 @@ blogRoute.post('writeBlog', async (c)=>{
       }).$extends(withAccelerate())
 
      try {
-         const {title, content, tag} = await c.req.json()
+
+        const body = await c.req.json()
+        const{ success,error, data} = blogValidation .safeParse(body);
+        if(!success) throw new ValidationError( error.issues.map((issue)=> issue.message).toString()+ ' , error in type validation of blog input data',402)
+          
+         const {title, content, tag} =body
          const userId = c.get('userId')
          
          if(!title && !content && tag ) return c.text('These fields are required',402)
@@ -57,6 +64,13 @@ blogRoute.post('/updateBlog/:blogId', async(c)=>{
       }).$extends(withAccelerate())
 
     try {
+        const body = await c.req.json()
+        const{ success,error, data} = updateBlogValidation .safeParse(body);
+        if(!success) throw new ValidationError( error.issues.map((issue)=> issue.message).toString()+ ' , error in type validation of blog updatation input data',402)
+          
+         
+
+
         const blogId = await c.req.param('blogId')
 
         console.log(blogId, 'blog')
@@ -65,13 +79,14 @@ blogRoute.post('/updateBlog/:blogId', async(c)=>{
         if(!blogId) return c.text('invalid blog',402)
     
             const userId = await c.get('userId')
-        const {content, title} = await c.req.json()
+        const {content, title} = body
      
         console.log('come')
         if(!(title || content)) return c.text('please provide at least one field to update',402)
     
     
             const updateBlog = await prisma.blog.update({
+                
                 where:{
                     id : blogId,
                  AND:[
@@ -83,11 +98,7 @@ blogRoute.post('/updateBlog/:blogId', async(c)=>{
                     title:title || undefined,
                     content: content || undefined
                 },
-                include:{
-                    author:true,
-                    likes:true,
-                    comments:true
-                }
+               
             })
 
             if(!updateBlog) return c.text('blog dost not exists with this blogId and UserId',401)
@@ -123,6 +134,19 @@ blogRoute.post('/updateBlog/:blogId', async(c)=>{
                where:{
                    id: blogId
                },
+               
+               include:{
+                author:{
+                   select:{
+                    username:true,
+                    fullName:true
+                   }
+                },
+              
+                
+            },
+           
+            
                
             })   
              
@@ -169,3 +193,5 @@ blogRoute.post('/updateBlog/:blogId', async(c)=>{
 
 
    })
+
+   

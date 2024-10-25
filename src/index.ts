@@ -23,7 +23,7 @@ app.get('/', (c) => {
   
   }).$extends(withAccelerate())
 
-  return c.text('Hello kfhsf!')
+  return c.text("hello users")
 })
 
 

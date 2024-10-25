@@ -3,8 +3,22 @@ import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import{setCookie,getCookie, deleteCookie} from 'hono/cookie'
 import { jwt,decode,verify,sign} from "hono/jwt";
+import {signInValidation,signUpValidation, updateUserValidation} from '@ramanand_kumar/blog-types'
 
 
+
+
+  class ValidationError extends Error {
+  errorCode: number;
+
+   constructor(message: string, errorCode: number) {
+    super(message);
+    this.name = 'ValidationError'; // Use PascalCase for class names
+    this.errorCode = errorCode; // Corrected the variable name
+    this.message = message || 'error in type varifying of input data'
+  }
+}
+export {ValidationError}
 
 
 export const userRoute = new Hono<{
@@ -76,7 +90,16 @@ userRoute.post('/register',async (c) => {
 
     try {
 
-         const {username,email,password,fullName} = await c.req.json()
+      const body = await c.req.json()
+
+      
+        const{ success,error, data} =  signUpValidation.safeParse(body);
+        if(!success) throw new ValidationError( error.issues.map((issue)=> issue.message).toString()+ ' , error in type validation of registration of user',402)
+          
+     
+
+
+         const {username,email,password,fullName} = body
 
          if(!username && !password && !email && !fullName){
              c.status(403)
@@ -132,13 +155,9 @@ userRoute.post('/register',async (c) => {
         
          
     } catch (error) {
-      c.status(500)
-      console.error(error);
-      
-      return c.json({
-        sucess:false,
-        message:"error in registring user"
-      })
+     console.log(error)
+      return c.text('error in registring user', 500)
+    
         
     }
   
@@ -153,7 +172,15 @@ userRoute.post('/register',async (c) => {
     // fetch the user details
 
    try {
-     const { email,username, password} = await c.req.json()
+
+    const data = await c.req.json()
+
+    const {success, error} = signInValidation.safeParse(data)
+
+    if(!success)  throw new ValidationError( error.issues.map((issue)=> issue.message).toString()+ ' , error in type validation in login user',402)
+          
+
+     const { email,username, password} = data
  
      if(!(email || username) && !password) {
        
@@ -237,7 +264,11 @@ userRoute.post('/register',async (c) => {
 
     try {
 
-      const {fullName , username} = await c.req.json()
+      const body = await c.req.json()
+      const{ success,error, data} = updateUserValidation .safeParse(body);
+      if(!success) throw new ValidationError( error.issues.map((issue)=> issue.message).toString()+ ' , error in type validation of updating of user details',402)
+        
+      const {fullName , username} = body
 
       const userId = await c.get('userId')
       
